@@ -8,6 +8,8 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
 import time 
 
 
@@ -69,11 +71,13 @@ def selectYear(driver, year):
 	ActionChains(driver).move_to_element(initial_check).click(initial_check).perform()
 
 
-def selectOrg(driver, selected_orgs):
+def selectOrg(driver, selected_orgs, last_element=None):
 	""" selected orgs is the number of orgs that have already been selected from the list """
 
 
 	#this part does not laod instantly so:
+
+	print("click")
 
 	wait = WebDriverWait(driver, 10)
 	wait.until(
@@ -81,6 +85,7 @@ def selectOrg(driver, selected_orgs):
 	)
 
 	orgtree = driver.find_element_by_class_name('orgtree-body-normal')
+	orgtree.location_once_scrolled_into_view
 	#state = orgtree.find_element_by_class_name('expand-checkbox-input')
 	#print(state.text)
 	#ActionChains(driver).move_to_element(state).click(state).perform()
@@ -95,7 +100,7 @@ def selectOrg(driver, selected_orgs):
 
 	# This guy did something similar for instagram.
 	# So we can work with something like he did
-	# 	loaded_following = driver.find_elements_by_xpath("//ul[@class='_539vh _4j13h']/li")
+	# loaded_following = driver.find_elements_by_xpath("//ul[@class='_539vh _4j13h']/li")
 	# loaded_till_now = len(loaded_following)
 
 	# while(loaded_till_now<total_following):
@@ -111,16 +116,122 @@ def selectOrg(driver, selected_orgs):
 	# # All 239 users are loaded. 
 	# driver.quit()
 
-	campi = orgtree.find_elements_by_class_name('orgtree-body-item')
-	for idx, campus in enumerate(campi):
-		if(idx >= selected_orgs and (idx - selected_orgs) < 20):
-			ActionChains(driver).move_to_element(campus).click(campus).perform()
-			total_selected = idx
-			print("clicked %s" %idx)
-		print(idx)
 
-	return total_selected + 1
+	# we can get the last element loaded and return it after the function ends
+	# then, next time, we scroll until we hit that element.
+	# Since once we hit it, it will be the last one and we need to go deeper,
+	# We can scroll until the element is no more visible
 
+	if last_element == None:
+		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		for idx, campus in enumerate(campi):
+			if(idx >= selected_orgs and (idx - selected_orgs) < 20):
+				ActionChains(driver).move_to_element(campus).click(campus).perform()
+				total_selected = idx
+				print("clicked %s" %idx)
+				name = campus.find_element_by_class_name('checkable')
+				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+				print(soup.span.text)
+				last_element = soup.span.text
+			print(idx)
+			last_element = campus
+
+	else:
+		# set focus on the list
+		#list_focus = driver.find_element_by_class_name("orgtree-body-normal-list")
+		#ActionChains(driver).move_to_element(list_focus).click(list_focus).perform()
+		ActionChains(driver).move_to_element(driver.find_element_by_class_name("orgtree-body-normal-list"))
+		last_name = orgtree.find_element_by_class_name('orgtree-body-item')
+		last_name = last_name.find_element_by_class_name('checkable')
+		soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+
+		while(soup.span.text != last_element):
+			# scroll down!
+			#driver.find_element_by_class_name("orgtree-body-normal-list").send_keys(Keys.ARROW_DOWN).perform()
+			last_name = orgtree.find_element_by_class_name('orgtree-body-item')
+			last_name = last_name.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
+			print(soup.span.text)
+			driver.execute_script("arguments[0].scrollBy(0,40);", driver.find_element_by_class_name("orgtree-body-normal-list"))
+			time.sleep(0.5)
+
+		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		for idx, campus in enumerate(campi):
+			print("%s , %s" % (idx, selected_orgs))
+			if(idx < 21 and idx > 0):
+				ActionChains(driver).move_to_element(campus).click(campus).perform()
+				total_selected = idx
+				print("clicked %s" %idx)
+				name = campus.find_element_by_class_name('checkable')
+				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+				print(soup.span.text)
+			print(idx)
+
+	return total_selected + 1, last_element
+
+
+def selectOrg_noClick(driver, selected_orgs, last_element=None):
+	""" For testing purposes  only!"""
+
+
+	#this part does not laod instantly so:
+
+	wait = WebDriverWait(driver, 10)
+	wait.until(
+    	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
+	)
+
+	orgtree = driver.find_element_by_class_name('orgtree-body-normal')
+
+
+	if last_element == None:
+		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		for idx, campus in enumerate(campi):
+			if(idx >= selected_orgs and (idx - selected_orgs) < 20):
+				#ActionChains(driver).move_to_element(campus).click(campus).perform()
+				total_selected = idx
+				print("clicked %s" %idx)
+				name = campus.find_element_by_class_name('checkable')
+				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+				print(soup.span.text)
+				last_element = soup.span.text
+			print(idx)
+
+	else:
+		# set focus on the list
+		#list_focus = driver.find_element_by_class_name("orgtree-body-normal-list")
+		#ActionChains(driver).move_to_element(list_focus).click(list_focus).perform()
+		ActionChains(driver).move_to_element(driver.find_element_by_class_name("orgtree-body-normal-list"))
+		last_name = orgtree.find_element_by_class_name('orgtree-body-item')
+		last_name = last_name.find_element_by_class_name('checkable')
+		soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+
+		while(soup.span.text != last_element):
+			# scroll down!
+			#driver.find_element_by_class_name("orgtree-body-normal-list").send_keys(Keys.ARROW_DOWN).perform()
+			last_name = orgtree.find_element_by_class_name('orgtree-body-item')
+			last_name = last_name.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
+			print(soup.span.text)
+			driver.execute_script("arguments[0].scrollBy(0,40);", driver.find_element_by_class_name("orgtree-body-normal-list"))
+			time.sleep(0.5)
+
+		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		for idx, campus in enumerate(campi):
+			print("%s , %s" % (idx, selected_orgs))
+			if(idx < 20):
+				#ActionChains(driver).move_to_element(campus).click(campus).perform()
+				total_selected = idx
+				print("clicked %s" %idx)
+				name = campus.find_element_by_class_name('checkable')
+				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+				print(soup.span.text)
+				last_element = soup.span.text
+			#print(idx)
+
+	return total_selected + 1, last_element
 
 def getReport(driver, name):
 
@@ -196,17 +307,19 @@ driver = initDriver()
 # program_names = getProgramNames(driver)
 # report_names = getReportNames(driver)
 year = "2016"
-selected_orgs = 19
+selected_orgs = 0
 selectYear(driver, year)
 checkSubjects(driver)
-print(selectOrg(driver, selected_orgs))
+#selected_orgs, last_element = selectOrg(driver, selected_orgs)
+
+selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs)
+selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
+selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
+selected_orgs, last_element = selectOrg(driver, selected_orgs, last_element=last_element)
+
+
 time.sleep(10)
 getReport(driver, "test_one_more_time")
-
-
-
-
-
 
 
 driver.stop_client()
