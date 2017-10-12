@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+import time 
 
 
 def clickShowMore(driver):
@@ -59,7 +60,7 @@ def selectYear(driver, year):
 	# But first it needs to have something else checked. Lokking for a single checked box is
 	# a lot simpler, we will save the initial checked box
 
-	initial_check = driver.find_element_by_class_name('checked-icon-checked')
+	initial_check = driver.find_element_by_class_name('checked')
 
 	# now we click any row containing "year"
 	checkRowYear(driver, year)
@@ -68,7 +69,8 @@ def selectYear(driver, year):
 	ActionChains(driver).move_to_element(initial_check).click(initial_check).perform()
 
 
-def selectOrg(driver):
+def selectOrg(driver, selected_orgs):
+	""" selected orgs is the number of orgs that have already been selected from the list """
 
 
 	#this part does not laod instantly so:
@@ -79,14 +81,45 @@ def selectOrg(driver):
 	)
 
 	orgtree = driver.find_element_by_class_name('orgtree-body-normal')
-	state = orgtree.find_element_by_class_name('expand-checkbox-input')
-	print(state.text)
-	ActionChains(driver).move_to_element(state).click(state).perform()
+	#state = orgtree.find_element_by_class_name('expand-checkbox-input')
+	#print(state.text)
+	#ActionChains(driver).move_to_element(state).click(state).perform()
 
-	# campi = orgtree.find_elements_by_class_name('orgtree-body-item')
-	# for campus in campi:
-	# 	ActionChains(driver).move_to_element(campus).click(campus).perform()
+	# the page does not load all the orgs automatically, we must scroll the div
+	# it loads dinamically so we cant just scroll all the way down
+	# fuck, this is going to be hard
+	# I do have an idea, we can click the scroller and press the down arrow.
+	# Doing that, the only thing left is to ensure we now if the div changed or not
+	# Which means they loaded something new
 
+
+	# This guy did something similar for instagram.
+	# So we can work with something like he did
+	# 	loaded_following = driver.find_elements_by_xpath("//ul[@class='_539vh _4j13h']/li")
+	# loaded_till_now = len(loaded_following)
+
+	# while(loaded_till_now<total_following):
+	#     print "following users loaded till now: ", loaded_till_now
+	#     print loaded_following[loaded_till_now-1]
+	#     loaded_following[loaded_till_now-1].location_once_scrolled_into_view
+	#     # driver.execute_script("arguments[0].focus();", loaded_following[loaded_till_now-1])
+	#     driver.find_element_by_tag_name('body').send_keys(Keys.END) # triggers AJAX request to load more users. observed that loading 10 users at a time.
+	#     sleep(1) # tried wihtout sleep but throws StaleElementReferenceException. As it takes time to get the resposne and update the DOM
+	#     loaded_following = driver.find_elements_by_xpath("//ul[@class='_539vh _4j13h']/li")
+	#     loaded_till_now = len(loaded_following)
+
+	# # All 239 users are loaded. 
+	# driver.quit()
+
+	campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+	for idx, campus in enumerate(campi):
+		if(idx >= selected_orgs and (idx - selected_orgs) < 20):
+			ActionChains(driver).move_to_element(campus).click(campus).perform()
+			total_selected = idx
+			print("clicked %s" %idx)
+		print(idx)
+
+	return total_selected + 1
 
 
 def getReport(driver, name):
@@ -124,7 +157,32 @@ def getReport(driver, name):
 def initDriver():
 	driver = webdriver.Chrome('./chromedriver')
 	driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	return driver
 
+
+def getProgramNames(driver):
+	program_drop_down = driver.find_element_by_class_name('selections-program')
+	program_drop_down = program_drop_down.find_element_by_class_name('drop-down-item-scroll')
+	program_drop_down = program_drop_down.find_elements_by_class_name('drop-down-item')
+	names = []
+	for program in program_drop_down:
+		#print(program.get_attribute("innerHTML"))
+		soup = BeautifulSoup(program.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+		names.append(soup.span.text)
+	return names
+
+def getReportNames(driver):
+	report_drop_down = driver.find_element_by_class_name('selections-report')
+	report_drop_down = report_drop_down.find_element_by_class_name('drop-down-item-list')
+	report_drop_down = report_drop_down.find_elements_by_class_name('drop-down-item')
+	names = []
+	for program in report_drop_down:
+		#print(program.get_attribute("innerHTML"))
+		soup = BeautifulSoup(program.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+		names.append(soup.span.text)
+	return names
 
 def main():
 	initDriver()
@@ -134,9 +192,15 @@ def main():
 	#	get reports
 	#   for report in reports
 
+driver = initDriver()
+# program_names = getProgramNames(driver)
+# report_names = getReportNames(driver)
+year = "2016"
+selected_orgs = 19
 selectYear(driver, year)
 checkSubjects(driver)
-selectOrg(driver)
+print(selectOrg(driver, selected_orgs))
+time.sleep(10)
 getReport(driver, "test_one_more_time")
 
 
@@ -145,5 +209,5 @@ getReport(driver, "test_one_more_time")
 
 
 
-# driver.stop_client()
-# driver.close()
+driver.stop_client()
+driver.close()
