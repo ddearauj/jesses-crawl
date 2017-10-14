@@ -81,7 +81,7 @@ def selectOrg(driver, selected_orgs, last_element=None):
 
 	wait = WebDriverWait(driver, 10)
 	wait.until(
-    	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
+		EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
 	)
 
 	orgtree = driver.find_element_by_class_name('orgtree-body-normal')
@@ -171,32 +171,24 @@ def selectOrg(driver, selected_orgs, last_element=None):
 	return total_selected + 1, last_element
 
 
-def selectOrg_noClick(driver, selected_orgs, last_element=None):
-	""" For testing purposes  only!"""
+def selectOrg_noClick(driver, last_element=None):
+	""" For testing purposes only!"""
 
 
 	#this part does not laod instantly so:
 
 	wait = WebDriverWait(driver, 10)
 	wait.until(
-    	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
+		EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
 	)
 
 	orgtree = driver.find_element_by_class_name('orgtree-body-normal')
+	last_scroll = False
+	done = False
 
-
+	campi = orgtree.find_elements_by_class_name('orgtree-body-item')
 	if last_element == None:
-		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
-		for idx, campus in enumerate(campi):
-			if(idx >= selected_orgs and (idx - selected_orgs) < 20):
-				#ActionChains(driver).move_to_element(campus).click(campus).perform()
-				total_selected = idx
-				print("clicked %s" %idx)
-				name = campus.find_element_by_class_name('checkable')
-				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
-				print(soup.span.text)
-				last_element = soup.span.text
-			print(idx)
+		last_element = clickOrgs(driver, campi)
 
 	else:
 		# set focus on the list
@@ -214,24 +206,79 @@ def selectOrg_noClick(driver, selected_orgs, last_element=None):
 			last_name = orgtree.find_element_by_class_name('orgtree-body-item')
 			last_name = last_name.find_element_by_class_name('checkable')
 			soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
-			print(soup.span.text)
-			driver.execute_script("arguments[0].scrollBy(0,40);", driver.find_element_by_class_name("orgtree-body-normal-list"))
-			time.sleep(0.5)
+			# final_soup = BeautifulSoup(end_of_list.get_attribute("innerHTML"), "lxml")
 
+			print("soup: %s vs. last_element: %s" % (soup.span.text, last_element))
+			# print("end_of_list: %s vs. last_element: %s " % (final_soup.span.text, last_element))
+			# if(final_soup.span.text == last_element):
+			# 	print("END OF LIST REACHED")
+			# 	break
+
+			if(checkEndScroll(driver, driver.find_element_by_class_name("orgtree-body-normal-list"))):
+			#driver.execute_script("arguments[0].scrollBy(0,40);", driver.find_element_by_class_name("orgtree-body-normal-list"))
+				last_scroll = True
+				break
+
+			time.sleep(0.01)
 		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
-		for idx, campus in enumerate(campi):
-			print("%s , %s" % (idx, selected_orgs))
-			if(idx < 20):
-				#ActionChains(driver).move_to_element(campus).click(campus).perform()
-				total_selected = idx
-				print("clicked %s" %idx)
-				name = campus.find_element_by_class_name('checkable')
-				soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
-				print(soup.span.text)
-				last_element = soup.span.text
-			#print(idx)
 
-	return total_selected + 1, last_element
+		if last_scroll:
+			getOrgsLastScroll(driver, last_element, campi)
+			done = True
+
+		else:
+			last_element = clickOrgs(driver, campi)
+
+	return last_element, done
+
+def getOrgsLastScroll(driver, last_org, list_orgs):
+	""" last org is a str and list of orgs is a list of webElements """
+
+	# what we need to do is go through the list of orgs until we hit the one we have seen before
+
+	#	iterate over a copy of the list so we can remove things
+	for org in list(list_orgs):
+		name = org.find_element_by_class_name('checkable')
+		soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+		name = soup.span.text
+
+		if (name != last_org):
+			list_orgs.remove(org)
+		else:
+			list_orgs.remove(org)
+			break
+
+	for idx, campus in enumerate(list_orgs):
+		if(idx < 20):
+			ActionChains(driver).move_to_element(campus).click(campus).perform()
+			print("clicked %s" %idx)
+			name = campus.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+			print(soup.span.text)
+			last_element = soup.span.text
+
+def clickOrgs(driver, list_orgs):
+	for idx, campus in enumerate(list_orgs):
+		if(idx < 20):
+			ActionChains(driver).move_to_element(campus).click(campus).perform()
+			print("clicked %s" %idx)
+			name = campus.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+			print(soup.span.text)
+			last_element = soup.span.text
+
+	return last_element
+
+
+def checkEndScroll(driver, element):
+	old = driver.execute_script("return arguments[0].scrollTop;", element)
+	driver.execute_script("arguments[0].scrollBy(0,40);", element)
+	
+	if (driver.execute_script("return arguments[0].scrollTop;", element) > old):
+		return(False)
+	else:
+		print("Acabou!")
+		return(True)
 
 def getReport(driver, name):
 
@@ -312,15 +359,23 @@ selectYear(driver, year)
 checkSubjects(driver)
 #selected_orgs, last_element = selectOrg(driver, selected_orgs)
 
-selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs)
-selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
-selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
-selected_orgs, last_element = selectOrg(driver, selected_orgs, last_element=last_element)
+done = False
+last_element, done = selectOrg_noClick(driver)
+getReport(driver, "Test_Program0_Report0_allOrgs")
+driver.get("https://txreports.emetric.net/?domain=1&report=1")
+
+while(not done):
+	last_element, done = selectOrg_noClick(driver, last_element=last_element)
+	getReport(driver, "Test_Program0_Report0_allOrgs")
+	driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	print("new loop")
+
+
+# selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
+# selected_orgs, last_element = selectOrg(driver, selected_orgs, last_element=last_element)
 
 
 time.sleep(10)
-getReport(driver, "test_one_more_time")
-
 
 driver.stop_client()
 driver.close()
