@@ -60,8 +60,6 @@ Matrix = [["A1", "A2", "A3", "A4"],
 
 reversedMatrix = list(reversed(Matrix))
 
-def getLine
-
 for i in range(4):
 	for k in range(i-1, -1, -1):
 		for ji in range(len(reversedMatrix[i])):
