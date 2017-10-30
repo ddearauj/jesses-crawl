@@ -68,29 +68,27 @@ reversedMatrix = list(reversed(Matrix))
 # for combo in itertools.product(*Matrix):
 # 	print(combo)
 
-# tirando da documentação do python
-
-def product(*args, repeat=1):
-	# product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
-	# product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
-	pools = [tuple(pool) for pool in args] * repeat
-	result = [[]]
-	for pool in pools:
-		result = [x+[y] for x in result for y in pool]
-		print(result)
-	for prod in result:
-		yield tuple(prod)
+def recursive_click(Matrix, row=0):
+	if len(Matrix) > row:
+		print("nova linha")
+		print(row)
+		print("Resto Matrix: %s" % Matrix[row:])
+		for button in Matrix[row]:
+			print(button, end=" ")
+			recursive_click(Matrix, row+1)
+	else:
+		print()
 
 
+Matrix = [["A1", "A2", "A3", "A4"],
+    	  ["B1", "B2", "B3"],
+    	  ["C1", "C2", "C3", "C4", "C5"],
+    	  ["D1", "D2", "D3"]]
 
+reversedMatrix = list(reversed(Matrix))
 
-for i in range(4):
-	for k in range(i-1, -1, -1):
-		for ji in range(len(reversedMatrix[i])):
-			print(reversedMatrix[i][ji], end="; ")
-			for j in range(len(reversedMatrix[k])):
-				print(reversedMatrix[k][j], end=" ")
-			print()
+# o produto da lista funcionaria, mas como se eu clico em um dos elementos a Matrix muda, nao da para usar, mas a ideia é essa
+# acessando cada elemento individualmente
+recursive_click(Matrix)
 
-	print()
 

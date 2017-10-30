@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from orgs import selectOrg
+from selections import checkSubjects, selectYear
 
 import time 
 
@@ -82,9 +83,9 @@ def main():
 	program_names = getProgramNames(driver)
 	report_names = getReportNames(driver)
 
-	for program in programs:
-		for report in reports:
-			
+	# for program in programs:
+	# 	for report in reports:
+
 
 driver = initDriver()
 # program_names = getProgramNames(driver)
@@ -97,7 +98,7 @@ checkSubjects(driver)
 
 done = False
 last_element, done = selectOrg(driver)
-getReport(driver, "Test_Program0_Report0_allOrgs")
+getReport(driver, "guto")
 driver.get("https://txreports.emetric.net/?domain=1&report=1")
 
 while(not done):

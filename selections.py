@@ -90,7 +90,12 @@ def clickCheckButtons(driver, scopes_container, year):
 				ActionChains(driver).move_to_element(column).click(column).perform()
 				driver.implicitly_wait(100)
 
-def clickRadioButtons(driver, scopes_container, year):
+def getButtonsFromRow(radio_row):
+	group = radio_row.find_element_by_class_name('checkbox-group')
+	radios = group.find_elements_by_class_name('em-checkbox')
+	return radios
+
+def clickRadioButtons_old(driver, scopes_container, year):
 	# create a list of lists with all radio buttons, then click every combination
 	radio_rows = scopes_container.find_elements_by_class_name('radiobutton')
 	list_lists = []
@@ -148,6 +153,86 @@ def clickRadioButtons(driver, scopes_container, year):
 		print("nova combinacao")
 
 
+def clickRadioButtons(driver, scopes_container, year):
+	# create a list of lists with all radio buttons, then click every combination
+	radio_rows = getAllRadioButtons(scopes_container)
+
+	# select year, this might update the buttons
+	selectRadioYear(driver, year, radio_rows)
+	print('cliquei no ano')
+
+	# get new rows
+	radio_rows = getAllRadioButtons(scopes_container)
+
+	# get the admin row and the rest(non year rows)
+	non_year_rows = getNonYearRow(radio_rows)
+
+	recursive_click(non_year_rows, driver)
+
+
+
+
+
+def recursive_click(Matrix, driver, row=0):
+	if len(Matrix) > row:
+		print("nova linha, montar nova matriz")
+		print(row)
+		buttons_on_row = [] # clear buttons to look for
+		for row_i in Matrix: #get the rows starting from the one we are at!
+			buttons_on_row.append(getButtonsFromRow(row_i))
+		time.sleep(3)
+		for button in buttons_on_row[row]:
+			print(button.text)
+			ActionChains(driver).move_to_element(button).click(button).perform()
+			print(button.text, end=" ")
+			time.sleep(1)
+			recursive_click(Matrix, driver, row+1)
+	else:
+		print()
+
+
+def getButtonsFromRow(radio_row):
+	group = radio_row.find_element_by_class_name('checkbox-group')
+	radios = group.find_elements_by_class_name('em-checkbox')
+	return radios
+
+def getAllRadioButtons(scopes_container):
+	return scopes_container.find_elements_by_class_name('radiobutton')
+
+def getAdminRadioRow(radio_rows):
+	admin_year =[]
+	for row in radio_rows:
+		group = row.find_element_by_class_name('checkbox-group')
+		radio = group.find_elements_by_class_name('em-checkbox')
+		if("Admin" in row.text):
+			admin_year.append(radio)
+	return admin_year
+
+def getNonYearRow(radio_rows):
+	""" this will return all the radiobutton rows that are not year dependent"""
+
+	non_date_rows = []	
+	for row in radio_rows:
+		if("Year" not in row.text):
+			#print(row.text)
+			non_date_rows.append(row)
+	return non_date_rows
+
+def selectRadioYear(driver, year, radio_rows):
+	# select year, this might update the buttons
+	for row in radio_rows:
+		group = row.find_element_by_class_name('checkbox-group')
+		radio = group.find_elements_by_class_name('em-checkbox')
+		#print(row.text)
+		if("Year" in row.text):
+			#print(row.text)
+			for date in radio:
+				if(year in date.text):
+					ActionChains(driver).move_to_element(date).click(date).perform()
+					driver.implicitly_wait(100)
+					time.sleep(3)
+
+
 def selectYear(driver, year):
 	""" 
 	this will click on any row that has "year" in it 
@@ -165,7 +250,7 @@ def selectYear(driver, year):
 	initial_check = driver.find_element_by_class_name('checked')
 
 	# now we click any row containing "year"
-	checkRowYear(driver, year)
+	checkRowYearTwoWay(driver, year)
 
 	# now uncheck the first one
 	ActionChains(driver).move_to_element(initial_check).click(initial_check).perform()
@@ -201,21 +286,20 @@ def selectReport(driver, name):
 				ActionChains(driver).move_to_element(button).click(button).perform()
 				break
 
+if __name__ == '__main__':
+	driver = webdriver.Chrome('./chromedriver')
+	# driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	# # selectProgram(driver, "TAKS")
+	# selectProgram(driver, "STAAR EOC")
+	# wait = WebDriverWait(driver, 10)
+	# wait.until(
+	# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
+	# )
+	# selectReport(driver, "Standard Summary")
+	# wait = WebDriverWait(driver, 10)
+	# wait.until(
+	# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
+	# )
 
-
-driver = webdriver.Chrome('./chromedriver')
-# driver.get("https://txreports.emetric.net/?domain=1&report=1")
-# # selectProgram(driver, "TAKS")
-# selectProgram(driver, "STAAR EOC")
-# wait = WebDriverWait(driver, 10)
-# wait.until(
-# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
-# )
-# selectReport(driver, "Standard Summary")
-# wait = WebDriverWait(driver, 10)
-# wait.until(
-# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
-# )
-
-driver.get("https://txreports.emetric.net/?domain=4&report=39")
-clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016")
+	driver.get("https://txreports.emetric.net/?domain=4&report=39")
+	clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016")
