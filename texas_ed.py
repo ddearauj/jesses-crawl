@@ -78,43 +78,41 @@ def getReportNames(driver):
 	return names
 
 def main():
+
 	driver = initDriver()
+	# program_names = getProgramNames(driver)
+	# report_names = getReportNames(driver)
 	year = "2016"
-	program_names = getProgramNames(driver)
-	report_names = getReportNames(driver)
-
-	# for program in programs:
-	# 	for report in reports:
-
-
-driver = initDriver()
-# program_names = getProgramNames(driver)
-# report_names = getReportNames(driver)
-year = "2016"
-selected_orgs = 0
-selectYear(driver, year)
-checkSubjects(driver)
-#selected_orgs, last_element = selectOrg(driver, selected_orgs)
-
-done = False
-last_element, done = selectOrg(driver)
-getReport(driver, "guto")
-driver.get("https://txreports.emetric.net/?domain=1&report=1")
-
-while(not done):
+	selected_orgs = 0
 	selectYear(driver, year)
 	checkSubjects(driver)
-	last_element, done = selectOrg(driver, last_element=last_element)
-	getReport(driver, "new")
+	#selected_orgs, last_element = selectOrg(driver, selected_orgs)
+
+	done = False
+	last_element, done = selectOrg(driver)
+	getReport(driver, "guto")
 	driver.get("https://txreports.emetric.net/?domain=1&report=1")
-	print("new loop")
+
+	while(not done):
+		selectYear(driver, year)
+		checkSubjects(driver)
+		last_element, done = selectOrg(driver, last_element=last_element)
+		getReport(driver, "new")
+		driver.execute_script("window.history.go(-1)")
+		#clear the orgs
+
+		print("new loop")
 
 
-# selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
-# selected_orgs, last_element = selectOrg(driver, selected_orgs, last_element=last_element)
+	# selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)
+	# selected_orgs, last_element = selectOrg(driver, selected_orgs, last_element=last_element)
 
 
-time.sleep(10)
+	time.sleep(10)
 
-driver.stop_client()
-driver.close()
+	driver.stop_client()
+	driver.close()
+
+
+if __name__ == '__main__':
+	main()

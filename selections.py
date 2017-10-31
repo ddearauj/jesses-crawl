@@ -12,6 +12,66 @@ from selenium.webdriver.common.keys import Keys
 import itertools
 import time 
 
+from orgs import selectOrg
+
+def getReport(driver, name):
+
+	get_report = driver.find_element_by_class_name('list-get-reports')
+	button = get_report.find_element_by_class_name('btn')
+	ActionChains(driver).move_to_element(button).click(button).perform()
+
+	# this will lead to a different page with the report
+	# the download button is in the new page
+
+	wait = WebDriverWait(driver, 10)
+	wait.until(
+		EC.presence_of_element_located((By.CLASS_NAME, "icon-download3"))
+	)
+	time.sleep(5)
+	download = driver.find_element_by_class_name('icon-download3')
+	ActionChains(driver).move_to_element(download).click(download).perform()
+	driver.implicitly_wait(10)
+
+	# another popup will show. Now select csv and give it a name
+	form = driver.find_elements_by_class_name('di-form-control')
+	pdf_vs_csv = form[0].find_elements_by_class_name('em-checkbox')
+	#pdf_vs_csv = form[0].find_elements_by_xpath("//label[@class='em-checkbox']")
+
+	for option in pdf_vs_csv:
+		print(option.text)
+		if 'CSV' in option.text:
+			ActionChains(driver).move_to_element(option).click(option).perform()
+
+	input_name = form[1].find_element_by_class_name('di-form-input')
+	input_name.clear()
+	input_name.send_keys(str(name))
+	driver.implicitly_wait(100)
+
+	# final download button!
+	footer = driver.find_element_by_class_name('rc-dialog-footer')
+	download_btn = footer.find_element_by_class_name('btn-primary')
+	ActionChains(driver).move_to_element(download_btn).click(download_btn).perform()
+
+def clear_orgs(driver):
+	clear = driver.find_element_by_class_name('orgtree-selector-tool-clear-text')
+	ActionChains(driver).move_to_element(clear).click(clear).perform()
+
+def loop_organizations(driver, file_name):
+
+	done = False
+	last_element, done = selectOrg(driver)
+	getReport(driver, file_name)
+	driver.execute_script("window.history.go(-1)")
+	clear_orgs(driver)
+
+	while(not done):
+		last_element, done = selectOrg(driver, last_element=last_element)
+		getReport(driver, file_name)
+		print("got report!!")
+		driver.execute_script("window.history.go(-1)")
+		clear_orgs(driver)
+		print("new loop")
+
 def checkTwoWayTable(driver):
 	try:
 		driver.find_element_by_class_name('twoway-table')
@@ -32,7 +92,6 @@ def checkRadioButtons(driver):
 		return True
 	except:
 		return False
-
 
 def clickShowMore(driver):
 	try:
@@ -65,7 +124,6 @@ def checkSubjects(driver):
 		ActionChains(driver).move_to_element(subj).click(subj).perform()
 		driver.implicitly_wait(100)
 
-
 def clickCheckButtons(driver, scopes_container, year):
 
 	checkRows = scopes_container.find_elements_by_class_name('checkbox')
@@ -90,70 +148,7 @@ def clickCheckButtons(driver, scopes_container, year):
 				ActionChains(driver).move_to_element(column).click(column).perform()
 				driver.implicitly_wait(100)
 
-def getButtonsFromRow(radio_row):
-	group = radio_row.find_element_by_class_name('checkbox-group')
-	radios = group.find_elements_by_class_name('em-checkbox')
-	return radios
-
-def clickRadioButtons_old(driver, scopes_container, year):
-	# create a list of lists with all radio buttons, then click every combination
-	radio_rows = scopes_container.find_elements_by_class_name('radiobutton')
-	list_lists = []
-	admin_year = []
-
-	# select year, this might update the buttons
-	for row in radio_rows:
-		group = row.find_element_by_class_name('checkbox-group')
-		radio = group.find_elements_by_class_name('em-checkbox')
-		print(row.text)
-		if("Year" in row.text):
-			print(row.text)
-			for date in radio:
-				if(year in date.text):
-					ActionChains(driver).move_to_element(date).click(date).perform()
-					driver.implicitly_wait(100)
-					time.sleep(3)
-
-	# get new buttons
-	print('cliquei no ano')
-	radio_rows = driver.find_element_by_class_name('scopes-container').find_elements_by_class_name('radiobutton')
-	for row in radio_rows:
-		group = row.find_element_by_class_name('checkbox-group')
-		radio = group.find_elements_by_class_name('em-checkbox')
-		print(row.text)
-		if("Admin" in row.text):
-			print(row.text)
-			admin_year.append(radio)
-
-		else:
-			if("Year" not in row.text):
-				list_lists.append(radio)
-
-	# remove radio buttons that are not from the year chosen
-	# then append the new list to the big list of lists
-	for row in admin_year:
-		for date in list(row):
-			if(year not in date.text):
-				row.remove(date)
-				break
-
-	for row in list_lists:
-		admin_year.append(row)
-
-	for element in admin_year:
-		print("new row")
-		for radio in element:
-			print(radio.text)
-
-	for listi in itertools.product(*admin_year):
-		for radio in listi:
-			print(radio.text)
-			ActionChains(driver).move_to_element(radio).click(radio).perform()
-		time.sleep(3)
-		print("nova combinacao")
-
-
-def clickRadioButtons(driver, scopes_container, year):
+def clickRadioButtons(driver, scopes_container, year, report_name, program_name):
 	# create a list of lists with all radio buttons, then click every combination
 	radio_rows = getAllRadioButtons(scopes_container)
 
@@ -167,26 +162,43 @@ def clickRadioButtons(driver, scopes_container, year):
 	# get the admin row and the rest(non year rows)
 	non_year_rows = getNonYearRow(radio_rows)
 
-	recursive_click(non_year_rows, driver)
+	recursive_click(non_year_rows, driver, report_name, program_name, [])
 
 
+def recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, row=0):
 
+	# there has to be an initial check to make sure it went through all the options before
+	# downloading all the reports
 
-
-def recursive_click(Matrix, driver, row=0):
+	initial_check = False
 	if len(Matrix) > row:
 		print("nova linha, montar nova matriz")
 		print(row)
 		buttons_on_row = [] # clear buttons to look for
 		for row_i in Matrix: #get the rows starting from the one we are at!
 			buttons_on_row.append(getButtonsFromRow(row_i))
-		time.sleep(3)
+		time.sleep(0.5)
 		for button in buttons_on_row[row]:
-			print(button.text)
+			if (len(download_file_suffix) == len(Matrix)):
+				download_file_suffix[row] = button.text
+			else:
+				print(button.text, end=" APENDEU ")
+				download_file_suffix.append(button.text)
+				print(download_file_suffix)
 			ActionChains(driver).move_to_element(button).click(button).perform()
 			print(button.text, end=" ")
-			time.sleep(1)
-			recursive_click(Matrix, driver, row+1)
+			print(row, end=" ")
+			print(len(Matrix), end=";;")
+			if ((len(Matrix) == row + 1) and not initial_check):
+				initial_check = True
+			if (initial_check):
+				print("BAIXAR REPORTS")
+				print(download_file_suffix)
+				file_name = "_".join(str(x) for x in download_file_suffix)
+				file_name = report_name + "_" + program_name + "_" + file_name
+				loop_organizations(driver, file_name)
+			time.sleep(0.5)
+			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, row+1)
 	else:
 		print()
 
@@ -232,7 +244,6 @@ def selectRadioYear(driver, year, radio_rows):
 					driver.implicitly_wait(100)
 					time.sleep(3)
 
-
 def selectYear(driver, year):
 	""" 
 	this will click on any row that has "year" in it 
@@ -255,8 +266,6 @@ def selectYear(driver, year):
 	# now uncheck the first one
 	ActionChains(driver).move_to_element(initial_check).click(initial_check).perform()
 
-
-
 def selectProgram(driver, name):
 	# click the arrow to show all programs
 	driver.find_element_by_class_name('drop-down-arrow').click()
@@ -271,7 +280,6 @@ def selectProgram(driver, name):
 				driver.find_element_by_class_name('drop-down-arrow').click()
 				break
 
-
 def selectReport(driver, name):
 	selector  = driver.find_element_by_id('reportSelector')
 	button = selector.find_element_by_class_name('drop-down-arrow')
@@ -285,6 +293,31 @@ def selectReport(driver, name):
 			else:
 				ActionChains(driver).move_to_element(button).click(button).perform()
 				break
+
+def getProgramNames(driver):
+	program_drop_down = driver.find_element_by_class_name('selections-program')
+	program_drop_down = program_drop_down.find_element_by_class_name('drop-down-item-scroll')
+	program_drop_down = program_drop_down.find_elements_by_class_name('drop-down-item')
+	names = []
+	for program in program_drop_down:
+		#print(program.get_attribute("innerHTML"))
+		soup = BeautifulSoup(program.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+		names.append(soup.span.text)
+	return names
+
+def getReportNames(driver):
+	report_drop_down = driver.find_element_by_class_name('selections-report')
+	report_drop_down = report_drop_down.find_element_by_class_name('drop-down-item-list')
+	report_drop_down = report_drop_down.find_elements_by_class_name('drop-down-item')
+	names = []
+	for program in report_drop_down:
+		#print(program.get_attribute("innerHTML"))
+		soup = BeautifulSoup(program.get_attribute("innerHTML"), "lxml")
+		print(soup.span.text)
+		names.append(soup.span.text)
+	return names
+
 
 if __name__ == '__main__':
 	driver = webdriver.Chrome('./chromedriver')
@@ -302,4 +335,4 @@ if __name__ == '__main__':
 	# )
 
 	driver.get("https://txreports.emetric.net/?domain=4&report=39")
-	clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016")
+	clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016", "STAAR EOC", "Standard Summary")

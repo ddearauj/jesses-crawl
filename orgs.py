@@ -105,7 +105,7 @@ def selectOrg(driver, last_element=None):
 			done = True
 
 		else:
-			last_element = clickOrgs(driver, campi)
+			last_element = clickOrgs_v2(driver, campi)
 
 	return last_element, done
 
@@ -167,7 +167,8 @@ def selectOrg_noClick(driver, last_element=None):
 			done = True
 
 		else:
-			last_element = clickOrgs(driver, campi)
+			# skips the last element
+			last_element = clickOrgs_v2(driver, campi)
 
 	return last_element, done
 
@@ -200,6 +201,18 @@ def getOrgsLastScroll(driver, last_org, list_orgs):
 def clickOrgs(driver, list_orgs):
 	for idx, campus in enumerate(list_orgs):
 		if(idx < 20):
+			ActionChains(driver).move_to_element(campus).click(campus).perform()
+			print("clicked %s" %idx)
+			name = campus.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
+			print(soup.span.text)
+			last_element = soup.span.text
+
+	return last_element
+
+def clickOrgs_v2(driver, list_orgs):
+	for idx, campus in enumerate(list_orgs):
+		if(idx > 0 and idx < 21):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
 			print("clicked %s" %idx)
 			name = campus.find_element_by_class_name('checkable')
