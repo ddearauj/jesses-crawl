@@ -172,8 +172,8 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 
 	initial_check = False
 	if len(Matrix) > row:
-		print("nova linha, montar nova matriz")
-		print(row)
+		#print("nova linha, montar nova matriz")
+		#print(row)
 		buttons_on_row = [] # clear buttons to look for
 		for row_i in Matrix: #get the rows starting from the one we are at!
 			buttons_on_row.append(getButtonsFromRow(row_i))
@@ -182,18 +182,18 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 			if (len(download_file_suffix) == len(Matrix)):
 				download_file_suffix[row] = button.text
 			else:
-				print(button.text, end=" APENDEU ")
+				#print(button.text, end=" APENDEU ")
 				download_file_suffix.append(button.text)
 				print(download_file_suffix)
 			ActionChains(driver).move_to_element(button).click(button).perform()
-			print(button.text, end=" ")
-			print(row, end=" ")
-			print(len(Matrix), end=";;")
+			#print(button.text, end=" ")
+			#print(row, end=" ")
+			#print(len(Matrix), end=";;")
 			if ((len(Matrix) == row + 1) and not initial_check):
 				initial_check = True
 			if (initial_check):
-				print("BAIXAR REPORTS")
-				print(download_file_suffix)
+				#print("BAIXAR REPORTS")
+				#print(download_file_suffix)
 				file_name = "_".join(str(x) for x in download_file_suffix)
 				file_name = report_name + "_" + program_name + "_" + file_name
 				loop_organizations(driver, file_name)
