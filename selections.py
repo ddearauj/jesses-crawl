@@ -182,7 +182,7 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 			if (len(download_file_suffix) == len(Matrix)):
 				download_file_suffix[row] = button.text
 			else:
-				#print(button.text, end=" APENDEU ")
+				print(button.text, end=" APENDEU ")
 				download_file_suffix.append(button.text)
 				print(download_file_suffix)
 			ActionChains(driver).move_to_element(button).click(button).perform()
@@ -196,6 +196,12 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 				#print(download_file_suffix)
 				file_name = "_".join(str(x) for x in download_file_suffix)
 				file_name = report_name + "_" + program_name + "_" + file_name
+				
+
+
+				# check possible check buttons here
+
+
 				loop_organizations(driver, file_name)
 			time.sleep(0.5)
 			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, row+1)

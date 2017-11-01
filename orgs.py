@@ -108,9 +108,7 @@ def selectOrg(driver, last_element=None):
 			last_element = clickOrgs_v2(driver, campi)
 
 	return last_element, done
-
 	
-
 def selectOrg_noClick(driver, last_element=None):
 	""" For testing purposes only!"""
 
@@ -222,7 +220,6 @@ def clickOrgs_v2(driver, list_orgs):
 
 	return last_element
 
-
 def checkEndScroll(driver, element):
 	old = driver.execute_script("return arguments[0].scrollTop;", element)
 	driver.execute_script("arguments[0].scrollBy(0,40);", element)
@@ -235,3 +232,23 @@ def checkEndScroll(driver, element):
 
 def clickClear(driver):
 	driver.find_element_by_class_name('orgtree-selector-tool-clear').click()
+
+def loopOrganizations(driver, file_name):
+
+	done = False
+	last_element, done = selectOrg(driver)
+	getReport(driver, file_name)
+	driver.execute_script("window.history.go(-1)")
+	clear_orgs(driver)
+
+	while(not done):
+		last_element, done = selectOrg(driver, last_element=last_element)
+		getReport(driver, file_name)
+		print("got report!!")
+		driver.execute_script("window.history.go(-1)")
+		clear_orgs(driver)
+		print("new loop")
+
+def clearOrgs(driver):
+	clear = driver.find_element_by_class_name('orgtree-selector-tool-clear-text')
+	ActionChains(driver).move_to_element(clear).click(clear).perform()
