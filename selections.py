@@ -12,7 +12,7 @@ from selenium.webdriver.common.keys import Keys
 import itertools
 import time 
 
-from orgs import selectOrg
+from orgs import selectOrg, loopOrganizations
 
 def getReport(driver, name):
 
@@ -162,10 +162,10 @@ def clickRadioButtons(driver, scopes_container, year, report_name, program_name)
 	# get the admin row and the rest(non year rows)
 	non_year_rows = getNonYearRow(radio_rows)
 
-	recursive_click(non_year_rows, driver, report_name, program_name, [])
+	recursive_click(non_year_rows, driver, report_name, program_name, [], scopes_container)
 
 
-def recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, row=0):
+def recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container,row=0):
 
 	# there has to be an initial check to make sure it went through all the options before
 	# downloading all the reports
@@ -200,11 +200,11 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 
 
 				# check possible check buttons here
+				clickCheckButtons(driver, scopes_container, "2016")
 
-
-				loop_organizations(driver, file_name)
+				loopOrganizations(driver, file_name)
 			time.sleep(0.5)
-			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, row+1)
+			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container, row+1)
 	else:
 		print()
 
@@ -340,5 +340,5 @@ if __name__ == '__main__':
 	# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
 	# )
 
-	driver.get("https://txreports.emetric.net/?domain=4&report=39")
+	driver.get("https://txreports.emetric.net/?domain=1&report=14")
 	clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016", "STAAR EOC", "Standard Summary")

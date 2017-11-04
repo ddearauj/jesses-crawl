@@ -10,7 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from orgs import selectOrg
+from orgs import selectOrg, loopOrganizations
 from selections import checkSubjects, selectYear
 
 import time 
@@ -89,19 +89,22 @@ def main():
 	#selected_orgs, last_element = selectOrg(driver, selected_orgs)
 
 	done = False
-	last_element, done = selectOrg(driver)
-	getReport(driver, "guto")
-	driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	loopOrganizations(driver, "STAAR_3-8_Group_Summary:_Performance_Levels")
+	# last_element, done = selectOrg(driver)
+	# getReport(driver, "")
+	# driver.get("https://txreports.emetric.net/?domain=1&report=1")
 
-	while(not done):
-		selectYear(driver, year)
-		checkSubjects(driver)
-		last_element, done = selectOrg(driver, last_element=last_element)
-		getReport(driver, "new")
-		driver.execute_script("window.history.go(-1)")
-		#clear the orgs
+	# while(not done):
+	# 	selectYear(driver, year)
+	# 	checkSubjects(driver)
+	# 	last_element, done = selectOrg(driver, last_element=last_element)
+	# 	getReport(driver, "STAAR_3-8_Group_Summary:_Performance_Levels")
+	# 	#driver.execute_script("window.history.go(-1)")
+	# 	driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	# 	time.sleep(2)
+	# 	#clear the orgs
 
-		print("new loop")
+	# 	print("new loop")
 
 
 	# selected_orgs, last_element = selectOrg_noClick(driver, selected_orgs, last_element=last_element)

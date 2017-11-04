@@ -4,7 +4,7 @@ from selenium import webdriver
 
 
 def initDriver():
-	driver = webdriver.Chrome('./chromedriver')
+	driver = webdriver.Chrome('../chromedriver')
 	driver.get("https://txreports.emetric.net/?domain=1&report=1")
 	return driver
 

@@ -10,9 +10,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time 
+from txreports import getReport
 
 
-def selectOrg(driver, last_element=None):
+def selectOrg(driver, last_element=None, position=None):
 	""" selected orgs is the number of orgs that have already been selected from the list """
 
 	#state = orgtree.find_element_by_class_name('expand-checkbox-input')
@@ -64,15 +65,16 @@ def selectOrg(driver, last_element=None):
 	last_scroll = False
 	done = False
 
-	campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+	org = orgtree.find_elements_by_class_name('orgtree-body-item')
+	element = driver.find_element_by_class_name("orgtree-body-normal-list")
 	if last_element == None:
-		last_element = clickOrgs(driver, campi)
+		last_element, position = clickOrgs(driver, org, element)
 
 	else:
 		# set focus on the list
 		#list_focus = driver.find_element_by_class_name("orgtree-body-normal-list")
 		#ActionChains(driver).move_to_element(list_focus).click(list_focus).perform()
-		ActionChains(driver).move_to_element(driver.find_element_by_class_name("orgtree-body-normal-list"))
+		ActionChains(driver).move_to_element(element)
 		last_name = orgtree.find_element_by_class_name('orgtree-body-item')
 		last_name = last_name.find_element_by_class_name('checkable')
 		soup = BeautifulSoup(last_name.get_attribute("innerHTML"), "lxml")
@@ -92,22 +94,22 @@ def selectOrg(driver, last_element=None):
 			# 	print("END OF LIST REACHED")
 			# 	break
 
-			if(checkEndScroll(driver, driver.find_element_by_class_name("orgtree-body-normal-list"))):
+			if(checkEndScroll(driver, element, position)):
 			#driver.execute_script("arguments[0].scrollBy(0,40);", driver.find_element_by_class_name("orgtree-body-normal-list"))
 				last_scroll = True
 				break
 
 			time.sleep(0.01)
-		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		org = orgtree.find_elements_by_class_name('orgtree-body-item')
 
 		if last_scroll:
-			getOrgsLastScroll(driver, last_element, campi)
+			getOrgsLastScroll(driver, last_element, org)
 			done = True
 
 		else:
-			last_element = clickOrgs_v2(driver, campi)
+			last_element, position = clickOrgs_v2(driver, org, element)
 
-	return last_element, done
+	return last_element, done, position
 	
 def selectOrg_noClick(driver, last_element=None):
 	""" For testing purposes only!"""
@@ -124,9 +126,9 @@ def selectOrg_noClick(driver, last_element=None):
 	last_scroll = False
 	done = False
 
-	campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+	org = orgtree.find_elements_by_class_name('orgtree-body-item')
 	if last_element == None:
-		last_element = clickOrgs(driver, campi)
+		last_element = clickOrgs(driver, org)
 
 	else:
 		# set focus on the list
@@ -158,15 +160,15 @@ def selectOrg_noClick(driver, last_element=None):
 				break
 
 			time.sleep(0.01)
-		campi = orgtree.find_elements_by_class_name('orgtree-body-item')
+		org = orgtree.find_elements_by_class_name('orgtree-body-item')
 
 		if last_scroll:
-			getOrgsLastScroll(driver, last_element, campi)
+			getOrgsLastScroll(driver, last_element, org)
 			done = True
 
 		else:
 			# skips the last element
-			last_element = clickOrgs_v2(driver, campi)
+			last_element = clickOrgs_v2(driver, org)
 
 	return last_element, done
 
@@ -196,7 +198,7 @@ def getOrgsLastScroll(driver, last_org, list_orgs):
 			print(soup.span.text)
 			last_element = soup.span.text
 
-def clickOrgs(driver, list_orgs):
+def clickOrgs(driver, list_orgs, element):
 	for idx, campus in enumerate(list_orgs):
 		if(idx < 20):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
@@ -205,10 +207,12 @@ def clickOrgs(driver, list_orgs):
 			soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
 			print(soup.span.text)
 			last_element = soup.span.text
+			position = driver.execute_script("return arguments[0].scrollTop;", element)
+			print(position)
 
-	return last_element
+	return last_element, position
 
-def clickOrgs_v2(driver, list_orgs):
+def clickOrgs_v2(driver, list_orgs, element):
 	for idx, campus in enumerate(list_orgs):
 		if(idx > 0 and idx < 21):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
@@ -217,12 +221,18 @@ def clickOrgs_v2(driver, list_orgs):
 			soup = BeautifulSoup(name.get_attribute("innerHTML"), "lxml")
 			print(soup.span.text)
 			last_element = soup.span.text
+			position = driver.execute_script("return arguments[0].scrollTop;", element)
+			print(position)
 
-	return last_element
+	return last_element, position
 
-def checkEndScroll(driver, element):
+def checkEndScroll(driver, element, position=None):
 	old = driver.execute_script("return arguments[0].scrollTop;", element)
-	driver.execute_script("arguments[0].scrollBy(0,40);", element)
+	print("old: %s x %s element" % (old, position))
+	if (position > old):
+		driver.execute_script("arguments[0].scrollBy(0,arguments[1]);", element, position)
+	else:
+		driver.execute_script("arguments[0].scrollBy(0,40);", element)
 	
 	if (driver.execute_script("return arguments[0].scrollTop;", element) > old):
 		return(False)
@@ -233,20 +243,20 @@ def checkEndScroll(driver, element):
 def clickClear(driver):
 	driver.find_element_by_class_name('orgtree-selector-tool-clear').click()
 
-def loopOrganizations(driver, file_name):
+def loopOrganizations(driver, file_name, last_element=None, position=None):
 
 	done = False
-	last_element, done = selectOrg(driver)
+	last_element, done, position = selectOrg(driver, last_element=last_element)
 	getReport(driver, file_name)
 	driver.execute_script("window.history.go(-1)")
-	clear_orgs(driver)
+	clearOrgs(driver)
 
 	while(not done):
-		last_element, done = selectOrg(driver, last_element=last_element)
+		last_element, done, position = selectOrg(driver, last_element=last_element, position=position)
 		getReport(driver, file_name)
 		print("got report!!")
 		driver.execute_script("window.history.go(-1)")
-		clear_orgs(driver)
+		clearOrgs(driver)
 		print("new loop")
 
 def clearOrgs(driver):
