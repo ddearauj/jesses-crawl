@@ -11,7 +11,7 @@ from selenium.webdriver.common.keys import Keys
 import time 
 
 
-def selectOrg(driver, last_element=None, position=None):
+def selectOrgs(driver, last_element=None, position=None):
 	""" last_element is the last clicked element from the previous iteration """
 
 	#this part does not laod instantly so:
@@ -27,22 +27,22 @@ def selectOrg(driver, last_element=None, position=None):
 	org = orgtree.find_elements_by_class_name('orgtree-body-item')
 	element = driver.find_element_by_class_name("orgtree-body-normal-list")
 	if last_element == None:
-		last_element, position = clickOrgs(driver, org, element)
+		last_element, position = clickInitialOrgs(driver, org, element)
 
 	else:
 		# set focus on the list
 		ActionChains(driver).move_to_element(element)
-		last_loaded_org_list = orgtree.find_element_by_class_name('orgtree-body-item')
-		last_loaded_org_list = last_loaded_org_list.find_element_by_class_name('checkable')
-		soup = BeautifulSoup(last_loaded_org_list.get_attribute("innerHTML"), "lxml")
+		last_loaded_org = orgtree.find_element_by_class_name('orgtree-body-item')
+		last_loaded_org = last_loaded_org.find_element_by_class_name('checkable')
+		soup = BeautifulSoup(last_loaded_org.get_attribute("innerHTML"), "lxml")
 		print(soup.span.text)
 
 		while(soup.span.text != last_element):
-			last_loaded_org_list = orgtree.find_element_by_class_name('orgtree-body-item')
-			last_loaded_org_list = last_loaded_org_list.find_element_by_class_name('checkable')
-			soup = BeautifulSoup(last_loaded_org_list.get_attribute("innerHTML"), "lxml")
+			last_loaded_org = orgtree.find_element_by_class_name('orgtree-body-item')
+			last_loaded_org = last_loaded_org.find_element_by_class_name('checkable')
+			soup = BeautifulSoup(last_loaded_org.get_attribute("innerHTML"), "lxml")
 			print("soup: %s vs. last_element: %s" % (soup.span.text, last_element))
-			if(checkEndScroll(driver, element, position)):
+			if(scrollAndCheckEnd(driver, element, position)):
 				last_scroll = True
 				break
 			time.sleep(0.01)
@@ -53,7 +53,7 @@ def selectOrg(driver, last_element=None, position=None):
 			done = True
 
 		else:
-			last_element, position = clickOrgs_v2(driver, org, element)
+			last_element, position = clickOrgs(driver, org, element)
 
 	return last_element, done, position
 	
@@ -83,7 +83,7 @@ def getOrgsLastScroll(driver, last_org, list_orgs):
 			print(soup.span.text)
 			last_element = soup.span.text
 
-def clickOrgs(driver, list_orgs, element):
+def clickInitialOrgs(driver, list_orgs, element):
 	for idx, campus in enumerate(list_orgs):
 		if(idx < 20):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
@@ -97,7 +97,7 @@ def clickOrgs(driver, list_orgs, element):
 
 	return last_element, position
 
-def clickOrgs_v2(driver, list_orgs, element):
+def clickOrgs(driver, list_orgs, element):
 	for idx, campus in enumerate(list_orgs):
 		if(idx > 0 and idx < 21):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
@@ -111,7 +111,7 @@ def clickOrgs_v2(driver, list_orgs, element):
 
 	return last_element, position
 
-def checkEndScroll(driver, element, position=None):
+def scrollAndCheckEnd(driver, element, position=None):
 	old = driver.execute_script("return arguments[0].scrollTop;", element)
 	print("old: %s x %s element" % (old, position))
 	if (position > old):
@@ -131,7 +131,7 @@ def resetPosition(driver, element):
 def loopOrganizations(driver, last_element=None, position=None):
 
 	done = False
-	last_element, done, position = selectOrg(driver, last_element=last_element)
+	last_element, done, position = selectOrgs(driver, last_element=last_element)
 	element = driver.find_element_by_class_name("orgtree-body-normal-list")
 
 	while(not done):
@@ -143,7 +143,7 @@ def loopOrganizations(driver, last_element=None, position=None):
 		# just so it is easier to see what is going on, you can comment this if you want
 		time.sleep(1)
 
-		last_element, done, position = selectOrg(driver, last_element=last_element, position=position)
+		last_element, done, position = selectOrgs(driver, last_element=last_element, position=position)
 
 def clearOrgs(driver):
 	clear = driver.find_element_by_class_name('orgtree-selector-tool-clear-text')
