@@ -10,6 +10,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time 
 
+from txreports import getReport
+
 
 def selectOrgs(driver, last_element=None, position=None):
 	""" last_element is the last clicked element from the previous iteration """
@@ -132,18 +134,17 @@ def loopOrganizations(driver, last_element=None, position=None):
 
 	done = False
 	last_element, done, position = selectOrgs(driver, last_element=last_element)
-	element = driver.find_element_by_class_name("orgtree-body-normal-list")
+	getReport(driver, file_name)
+	driver.execute_script("window.history.go(-1)")
+	clearOrgs(driver)
+
 
 	while(not done):
-		# when we get the report, it takes us to a new page, when we return to this one we lose the
-		# organizations that were clicked, so to simulate this, we reset the orgs scroll position
-		clearOrgs(driver)
-		resetPosition(driver, element)
-
-		# just so it is easier to see what is going on, you can comment this if you want
-		time.sleep(1)
-
 		last_element, done, position = selectOrgs(driver, last_element=last_element, position=position)
+		getReport(driver, file_name)
+		driver.execute_script("window.history.go(-1)")
+		clearOrgs(driver)
+
 
 def clearOrgs(driver):
 	clear = driver.find_element_by_class_name('orgtree-selector-tool-clear-text')
