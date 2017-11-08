@@ -10,7 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import itertools
-import time 
+from time import sleep
+import time
 
 from orgs import selectOrgs, loopOrganizations
 
@@ -30,7 +31,7 @@ def getReport(driver, name):
 	time.sleep(5)
 	download = driver.find_element_by_class_name('icon-download3')
 	ActionChains(driver).move_to_element(download).click(download).perform()
-	driver.implicitly_wait(10)
+	driver.implicitly_wait(1)
 
 	# another popup will show. Now select csv and give it a name
 	form = driver.find_elements_by_class_name('di-form-control')
@@ -45,39 +46,46 @@ def getReport(driver, name):
 	input_name = form[1].find_element_by_class_name('di-form-input')
 	input_name.clear()
 	input_name.send_keys(str(name))
-	driver.implicitly_wait(100)
+	driver.implicitly_wait(1)
 
 	# final download button!
 	footer = driver.find_element_by_class_name('rc-dialog-footer')
 	download_btn = footer.find_element_by_class_name('btn-primary')
 	ActionChains(driver).move_to_element(download_btn).click(download_btn).perform()
 
-def checkTwoWayTable(driver):
+def checkTwoWayTable(scopes_container):
 	try:
-		driver.find_element_by_class_name('twoway-table')
-		return True
+		scopes_container.find_element_by_css_selector('div.twoway-table')
 	except:
 		return False
+	else:
+		return True
 
-def checkCheckBoxes(driver):
-	try:
-		driver.find_element_by_class_name('checkbox')
-		return True
-	except:
-		return False
 
-def checkRadioButtons(driver):
+def checkCheckBoxes(scopes_container):
 	try:
-		driver.find_element_by_class_name('radiobutton')
-		return True
+		scopes_container.find_element_by_class_name('checkbox')
 	except:
 		return False
+	else:
+		return True
+
+def checkRadioButtons(driver, scopes_container):
+	try:
+		print("trying")
+		radio = scopes_container.find_element_by_css_selector('div.radiobutton')
+	except:
+		print("not found")
+		return False
+	else:
+		print("found")
+		return True
 
 def clickShowMore(driver):
 	try:
 		show_more = driver.find_element_by_class_name('twoway-table-show-more')
 		ActionChains(driver).move_to_element(show_more).click(show_more).perform()
-		driver.implicitly_wait(10)
+		driver.implicitly_wait(1)
 	except Exception as e:
 		print("The option is not available, so no click needed")
 
@@ -90,34 +98,22 @@ def checkRowYearTwoWay(driver, year):
 		if(year in date.text):
 			print(date.text)
 			ActionChains(driver).move_to_element(date).click(date).perform()
-			driver.implicitly_wait(100)
-
-def checkSubjects(driver):
-
-	# There might be a way to make this more generic 
-	# and avoid further website changes, but for now, lets go with the id.
-	# it is fast and simple. If it breaks, email me.
-
-	subjects = driver.find_element_by_xpath('//*[@id="app"]/div[1]/div/div[2]/div[3]/div[3]/div')
-	non_clicked_subjects = subjects.find_elements_by_class_name('em-checkbox')
-	for subj in non_clicked_subjects:
-		ActionChains(driver).move_to_element(subj).click(subj).perform()
-		driver.implicitly_wait(100)
+			driver.implicitly_wait(1)
 
 def clickCheckButtons(driver, scopes_container, year):
-
 	checkRows = scopes_container.find_elements_by_class_name('checkbox')
 	for row in checkRows:
 		group = row.find_element_by_class_name('checkbox-group')
 		initial_check = group.find_element_by_class_name('checked')
 		checkboxes = group.find_elements_by_class_name('em-checkbox')
 		if("Year" in row.text or "Admin" in row.text):
+			print("CLICK CHECK")
 			print(row.text)
 			for date in checkboxes:
 				if(year in date.text):
 					print(date.text)
 					ActionChains(driver).move_to_element(date).click(date).perform()
-					driver.implicitly_wait(100)
+					driver.implicitly_wait(1)
 
 			soup = BeautifulSoup(initial_check.get_attribute("innerHTML"), "lxml")
 			if(year not in soup.span.text):
@@ -126,7 +122,7 @@ def clickCheckButtons(driver, scopes_container, year):
 		else:
 			for column in checkboxes:
 				ActionChains(driver).move_to_element(column).click(column).perform()
-				driver.implicitly_wait(100)
+				driver.implicitly_wait(1)
 
 def clickRadioButtons(driver, scopes_container, year, report_name, program_name):
 	# create a list of lists with all radio buttons, then click every combination
@@ -140,11 +136,11 @@ def clickRadioButtons(driver, scopes_container, year, report_name, program_name)
 	radio_rows = getAllRadioButtons(scopes_container)
 
 	# get the admin row and the rest(non year rows)
-	non_year_rows = getNonYearRow(radio_rows)
+	non_year_rows = getNonYearRow(radio_rows, year)
 
-	recursive_click(non_year_rows, driver, report_name, program_name, [], scopes_container)
+	recursive_click(non_year_rows, driver, report_name, program_name, [], scopes_container, year)
 
-def recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container,row=0):
+def recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container, year, row=0):
 
 	# there has to be an initial check to make sure it went through all the options before
 	# downloading all the reports
@@ -155,7 +151,7 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 		#print(row)
 		buttons_on_row = [] # clear buttons to look for
 		for row_i in Matrix: #get the rows starting from the one we are at!
-			buttons_on_row.append(getButtonsFromRow(row_i))
+			buttons_on_row.append(getButtonsFromRow(row_i, year))
 		time.sleep(0.5)
 		for button in buttons_on_row[row]:
 			if (len(download_file_suffix) == len(Matrix)):
@@ -164,15 +160,11 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 				print(button.text, end=" APENDEU ")
 				download_file_suffix.append(button.text)
 				print(download_file_suffix)
+			
 			ActionChains(driver).move_to_element(button).click(button).perform()
-			#print(button.text, end=" ")
-			#print(row, end=" ")
-			#print(len(Matrix), end=";;")
 			if ((len(Matrix) == row + 1) and not initial_check):
 				initial_check = True
 			if (initial_check):
-				#print("BAIXAR REPORTS")
-				#print(download_file_suffix)
 				file_name = "_".join(str(x) for x in download_file_suffix)
 				file_name = report_name + "_" + program_name + "_" + file_name
 				
@@ -183,13 +175,19 @@ def recursive_click(Matrix, driver, report_name, program_name, download_file_suf
 
 				#loopOrganizations(driver, file_name)
 			time.sleep(0.5)
-			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container, row+1)
+			recursive_click(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container, year, row+1)
 	else:
 		print()
 
-def getButtonsFromRow(radio_row):
+def getButtonsFromRow(radio_row, year):
 	group = radio_row.find_element_by_class_name('checkbox-group')
 	radios = group.find_elements_by_class_name('em-checkbox')
+	if("Admin" in radio_row.text):
+		admin_radios = []
+		for radio in radios:
+			if(year in radio.text):
+				admin_radios.append(radio)
+		return admin_radios
 	return radios
 
 def getAllRadioButtons(scopes_container):
@@ -204,13 +202,12 @@ def getAdminRadioRow(radio_rows):
 			admin_year.append(radio)
 	return admin_year
 
-def getNonYearRow(radio_rows):
+def getNonYearRow(radio_rows, year):
 	""" this will return all the radiobutton rows that are not year dependent"""
 
 	non_date_rows = []	
 	for row in radio_rows:
 		if("Year" not in row.text):
-			#print(row.text)
 			non_date_rows.append(row)
 	return non_date_rows
 
@@ -225,10 +222,10 @@ def selectRadioYear(driver, year, radio_rows):
 			for date in radio:
 				if(year in date.text):
 					ActionChains(driver).move_to_element(date).click(date).perform()
-					driver.implicitly_wait(100)
+					driver.implicitly_wait(1)
 					time.sleep(3)
 
-def selectYear(driver, year):
+def selectYearTwoWay(driver, year):
 	""" 
 	this will click on any row that has "year" in it 
 	and uncheck the first checked box if it is not from "year"
@@ -302,21 +299,35 @@ def getReportNames(driver):
 		names.append(soup.span.text)
 	return names
 
+def makeSelections(driver, year, report_name, program_name):
+	if(checkTwoWayTable(driver.find_element_by_class_name('scopes-container'))):
+		selectYearTwoWay(driver, year)
+	if(checkRadioButtons(driver, driver.find_element_by_class_name('scopes-container'))):
+		print("we have radio!")
+		clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), year, report_name, program_name)
+	else:
+		clickCheckButtons(driver, driver.find_element_by_class_name('scopes-container'), year)
+
 
 if __name__ == '__main__':
-	driver = webdriver.Chrome('./chromedriver')
-	# driver.get("https://txreports.emetric.net/?domain=1&report=1")
-	# # selectProgram(driver, "TAKS")
-	# selectProgram(driver, "STAAR EOC")
-	# wait = WebDriverWait(driver, 10)
-	# wait.until(
-	# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
-	# )
-	# selectReport(driver, "Standard Summary")
-	# wait = WebDriverWait(driver, 10)
-	# wait.until(
-	# 	EC.presence_of_element_located((By.CLASS_NAME, "orgtree-body-normal"))
-	# )
+	driver = webdriver.Chrome('../chromedriver')
+	driver.get("https://txreports.emetric.net/?domain=1&report=1")
+	program_names = getProgramNames(driver)
+	for program in program_names:
+		selectProgram(driver, program)
+		print("new program")
+		sleep(1)
+		reports = getReportNames(driver)
+		for report in reports:
+			selectReport(driver, report)
+			sleep(1)
+			print("New report")
+			makeSelections(driver, "2016", report, program)
 
-	driver.get("https://txreports.emetric.net/?domain=1&report=14")
-	clickRadioButtons(driver, driver.find_element_by_class_name('scopes-container'), "2016", "STAAR EOC", "Standard Summary")
+
+
+
+
+
+
+	
