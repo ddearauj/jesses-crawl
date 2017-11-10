@@ -209,8 +209,7 @@ def makeSelections(driver, year, report_name, program_name):
 		clickRadioButtons(driver, scopes_container, year, report_name, program_name)
 	else:
 		clickCheckButtons(driver, scopes_container, year)
-		getReport(driver, str(report_name + '_' + program_name))
-
+		loopOrganizations(driver, file_name=str(report_name + '_' + program_name))
 
 if __name__ == '__main__':
 	driver = webdriver.Chrome('../chromedriver')
