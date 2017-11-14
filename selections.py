@@ -60,7 +60,9 @@ def clickRowYearTwoWay(driver, year):
 			driver.implicitly_wait(1)
 
 def clickCheckButtons(driver, scopes_container, year):
+	time.sleep(1)
 	checkRows = scopes_container.find_elements_by_class_name('checkbox')
+	driver.execute_script("arguments[0].scrollIntoView();", checkRows[0])
 	for row in checkRows:
 		group = row.find_element_by_class_name('checkbox-group')
 		initial_check = group.find_element_by_class_name('checked')
@@ -216,7 +218,7 @@ if __name__ == '__main__':
 	driver = webdriver.Chrome('../chromedriver')
 	driver.get("https://txreports.emetric.net/?domain=1&report=1")
 	program_names = getProgramNames(driver)
-	for program in program_names:
+	for program in program_names[:-2]:
 		selectProgram(driver, program)
 		print("new program")
 		sleep(1)

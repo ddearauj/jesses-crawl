@@ -124,7 +124,7 @@ def recursiveClick(Matrix, driver, report_name, program_name, download_file_suff
 				# check possible check buttons here
 				clickCheckButtons(driver, scopes_container, "2016")
 
-				loopOrganizations(driver, file_name=file_name)
+				# loopOrganizations(driver, file_name=file_name)
 			time.sleep(0.5)
 			recursiveClick(Matrix, driver, report_name, program_name, download_file_suffix, scopes_container, year, row+1)
 	else:
@@ -209,7 +209,7 @@ def makeSelections(driver, year, report_name, program_name):
 		clickRadioButtons(driver, scopes_container, year, report_name, program_name)
 	else:
 		clickCheckButtons(driver, scopes_container, year)
-		loopOrganizations(driver, file_name=str(report_name + '_' + program_name))
+		#loopOrganizations(driver, file_name=str(report_name + '_' + program_name))
 
 if __name__ == '__main__':
 	driver = webdriver.Chrome('../chromedriver')

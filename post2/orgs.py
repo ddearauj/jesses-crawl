@@ -128,7 +128,7 @@ def scrollAndCheckEnd(driver, element, position=None):
 def resetPosition(driver, element):
 	driver.execute_script("arguments[0].scrollTo(0, 0);", element)
 
-def loopOrganizations(driver, last_element=None, position=None, file_name):
+def loopOrganizations(driver, last_element=None, position=None, file_name=None):
 
 	done = False
 	last_element, done, position = selectOrgs(driver, last_element=last_element)

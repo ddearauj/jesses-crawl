@@ -86,6 +86,8 @@ def getOrgsLastScroll(driver, last_org, list_orgs):
 			last_element = soup.span.text
 
 def clickInitialOrgs(driver, list_orgs, element):
+	time.sleep(1)
+	print("Initial CLick")
 	for idx, campus in enumerate(list_orgs):
 		if(idx < 20):
 			ActionChains(driver).move_to_element(campus).click(campus).perform()
@@ -130,7 +132,7 @@ def scrollAndCheckEnd(driver, element, position=None):
 def resetPosition(driver, element):
 	driver.execute_script("arguments[0].scrollTo(0, 0);", element)
 
-def loopOrganizations(driver, last_element=None, position=None, file_name):
+def loopOrganizations(driver, last_element=None, position=None, file_name=None):
 
 	done = False
 	last_element, done, position = selectOrgs(driver, last_element=last_element)
